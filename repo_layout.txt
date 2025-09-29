@@ -1,0 +1,15 @@
+progen3-sae-steer/
+├─ data/                      # fasta + splits + labels
+├─ scripts/
+│  ├─ 01_extract_layer.py     # save pooled hidden states (N×d)
+│  ├─ 02_train_sae.py         # trains SAE, runs fidelity checks
+│  ├─ 03_feature_stats.py     # correlations, FDR, selects good latents
+│  ├─ 04_train_latent_clf.py  # logistic regression on z
+│  ├─ 05_generate_steered.py  # α-grid steering decode
+│  └─ 06_eval_report.py       # plots: ΔNLL, AUC, enrichment
+├─ models/
+│  ├─ sae.pt
+│  ├─ steering_v.npy
+│  └─ good_latents.json
+└─ reports/
+   └─ phase1_summary.md
