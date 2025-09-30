@@ -13,3 +13,33 @@ progen3-sae-steer/
 │  └─ good_latents.json
 └─ reports/
    └─ phase1_summary.md
+
+
+
+   Approach:
+
+   Data
+
+Target: EC 3.4.21.- serine endopeptidases (5k sequences).
+
+Background: UniRef50 representatives (25k) in the same length range; exclude 3.4.21.-. (You already have the REST setup.)
+
+Optional concept labels to test: InterPro/PROSITE signatures for trypsin-family His/Ser active sites (PS00134, PS00135), plus Pfam peptidase S1 domains, etc.
+
+Representations
+
+Extract hidden states from ~middle-late ProGen-3 layers (you saw 10 layers; start L≈6). Mean-pool per sequence for sequence-level SAEs; 
+optionally also keep token-level activations for motif discovery.
+
+SAE training + fidelity
+
+Train a Top-K SAE (e.g., width 4×, K∈[32,128]); verify ΔNLL ≤ ~5% when patching the layer with h_hat. This mirrors the SAE best-practice check.
+
+Association panel per feature
+For each latent j:
+
+Statistics: 
+r / logistic coef vs: (i) EC 3.4.21.- label, (ii) PROSITE PS00134/PS00135 hits, (iii) Pfam S1 domains, (iv) secondary structure (if available). 
+FDR-correct and compute purity/coverage. InterPLM’s analysis framework is the closest template.
+Top-activators: list sequences & positions with largest z_j; show a logo around those positions.  
+For trypsin-like proteases you should see His-site/Ser-site contexts (documented motifs in PROSITE)
