@@ -1,0 +1,23 @@
+# Generated data (DO NOT TRACK)
+# =========================
+data/embeddings/
+data/embeddings_memmap/
+results/
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# =========================
+# Logs
+# =========================
+*.log
+
+# =========================
+# Environment
+# =========================
+.venv/
+.env
