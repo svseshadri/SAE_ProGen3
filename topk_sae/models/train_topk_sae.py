@@ -1,0 +1,599 @@
+from __future__ import annotations
+
+import argparse
+import json
+from pathlib import Path
+
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from tqdm import trange
+
+from topk_sae.dataset.memmap_dataset import ActivationMemmap
+
+
+# =========================================================
+# Model
+# =========================================================
+class TopKSAE(nn.Module):
+    """
+    Top-K Sparse Autoencoder.
+
+    Pipeline:
+        x -> encoder -> z_pre -> ReLU -> TopK -> z -> decoder -> x_hat
+    """
+
+    def __init__(
+        self,
+        d_in: int,
+        d_sae: int,
+        k: int,
+        use_pre_bias: bool = True,
+        use_post_bias: bool = True,
+        normalize_decoder: bool = True,
+    ):
+        super().__init__()
+
+        self.d_in = d_in
+        self.d_sae = d_sae
+        self.k = k
+        self.normalize_decoder = normalize_decoder
+
+        self.encoder = nn.Linear(d_in, d_sae, bias=use_pre_bias)
+        self.decoder = nn.Linear(d_sae, d_in, bias=use_post_bias)
+
+        self.reset_parameters()
+
+    def reset_parameters(self) -> None:
+        nn.init.xavier_uniform_(self.encoder.weight)
+        nn.init.xavier_uniform_(self.decoder.weight)
+
+        if self.encoder.bias is not None:
+            nn.init.zeros_(self.encoder.bias)
+        if self.decoder.bias is not None:
+            nn.init.zeros_(self.decoder.bias)
+
+    @torch.no_grad()
+    def normalize_decoder_weights_(self) -> None:
+        """
+        Normalize decoder columns to unit norm.
+        """
+        w = self.decoder.weight.data  # [d_in, d_sae]
+        norms = w.norm(dim=0, keepdim=True).clamp_min(1e-8)
+        self.decoder.weight.data = w / norms
+
+    def encode_pre(self, x: torch.Tensor) -> torch.Tensor:
+        return self.encoder(x)
+
+    def topk_sparse(self, z_pre: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+        """
+        Apply ReLU, then keep only the top-k activations per example.
+        """
+        z_relu = F.relu(z_pre)
+        topk_vals, topk_idx = torch.topk(z_relu, k=self.k, dim=-1)
+
+        z = torch.zeros_like(z_relu)
+        z.scatter_(dim=-1, index=topk_idx, src=topk_vals)
+
+        return z, topk_idx
+
+    def decode(self, z: torch.Tensor) -> torch.Tensor:
+        return self.decoder(z)
+
+    def forward(self, x: torch.Tensor) -> dict[str, torch.Tensor]:
+        if self.normalize_decoder:
+            self.normalize_decoder_weights_()
+
+        z_pre = self.encode_pre(x)
+        z, topk_idx = self.topk_sparse(z_pre)
+        x_hat = self.decode(z)
+
+        l0 = (z > 0).float().sum(dim=-1).mean()
+        l1 = z.abs().sum(dim=-1).mean()
+
+        return {
+            "x_hat": x_hat,
+            "z": z,
+            "z_pre": z_pre,
+            "topk_idx": topk_idx,
+            "l0": l0,
+            "l1": l1,
+        }
+
+
+# =========================================================
+# Losses / metrics
+# =========================================================
+def reconstruction_mse(x: torch.Tensor, x_hat: torch.Tensor) -> torch.Tensor:
+    return ((x - x_hat) ** 2).mean()
+
+
+def normalized_mse(x: torch.Tensor, x_hat: torch.Tensor) -> torch.Tensor:
+    mse = ((x - x_hat) ** 2).mean()
+    denom = (x ** 2).mean().clamp_min(1e-8)
+    return mse / denom
+
+
+def explained_variance(x: torch.Tensor, x_hat: torch.Tensor) -> torch.Tensor:
+    var_x = x.var(dim=0, unbiased=False).mean()
+    var_resid = (x - x_hat).var(dim=0, unbiased=False).mean()
+    return 1.0 - (var_resid / (var_x + 1e-8))
+
+
+# =========================================================
+# Eval
+# =========================================================
+@torch.no_grad()
+def evaluate_sae(
+    model: nn.Module,
+    dataset,
+    batch_size: int,
+    n_batches: int,
+    device: str,
+    input_mean: torch.Tensor | None = None,
+    input_std: torch.Tensor | None = None,
+) -> dict[str, float]:
+    """
+    Evaluate the SAE on randomly sampled batches.
+    """
+    model.eval()
+
+    mse_total = 0.0
+    nmse_total = 0.0
+    ev_total = 0.0
+    l0_total = 0.0
+
+    for _ in range(n_batches):
+        x = dataset.sample_torch_batch(
+            batch_size=batch_size,
+            device=device,
+            out_dtype=torch.float32,
+            pin_memory=(device != "cpu"),
+        )
+
+        if input_mean is not None and input_std is not None:
+            x = (x - input_mean) / input_std
+
+        out = model(x)
+        x_hat = out["x_hat"]
+
+        mse_total += reconstruction_mse(x, x_hat).item()
+        nmse_total += normalized_mse(x, x_hat).item()
+        ev_total += explained_variance(x, x_hat).item()
+        l0_total += out["l0"].item()
+
+    denom = float(n_batches)
+    return {
+        "mse": mse_total / denom,
+        "nmse": nmse_total / denom,
+        "explained_variance": ev_total / denom,
+        "l0": l0_total / denom,
+    }
+
+
+# =========================================================
+# Helpers
+# =========================================================
+@torch.no_grad()
+def estimate_dataset_stats(dataset, n_batches: int, batch_size: int, device: str = "cpu"):
+    """
+    Estimate per-dimension mean/std from sampled batches.
+    """
+    total_sum = None
+    total_sq_sum = None
+    total_n = 0
+
+    for _ in range(n_batches):
+        x = dataset.sample_torch_batch(
+            batch_size=batch_size,
+            device=device,
+            out_dtype=torch.float32,
+            pin_memory=False,
+        )
+
+        batch_sum = x.sum(dim=0)
+        batch_sq_sum = (x ** 2).sum(dim=0)
+
+        if total_sum is None:
+            total_sum = batch_sum
+            total_sq_sum = batch_sq_sum
+        else:
+            total_sum += batch_sum
+            total_sq_sum += batch_sq_sum
+
+        total_n += x.shape[0]
+
+    mean = total_sum / total_n
+    var = total_sq_sum / total_n - mean ** 2
+    std = var.clamp_min(1e-6).sqrt()
+    return mean, std
+
+
+def dead_latent_fraction(fire_counts: torch.Tensor) -> float:
+    return (fire_counts == 0).float().mean().item()
+
+
+def save_checkpoint(
+    path: Path,
+    model: TopKSAE,
+    optimizer: torch.optim.Optimizer,
+    step: int,
+    best_val_nmse: float,
+    input_mean: torch.Tensor | None,
+    input_std: torch.Tensor | None,
+    metrics: dict,
+) -> None:
+    """
+    Save a checkpoint containing model state, optimizer state, normalization
+    stats, and the most relevant metrics.
+    """
+    torch.save(
+        {
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+            "step": step,
+            "best_val_nmse": best_val_nmse,
+            "config": {
+                "d_in": model.d_in,
+                "d_sae": model.d_sae,
+                "k": model.k,
+            },
+            "input_mean": input_mean.detach().cpu() if input_mean is not None else None,
+            "input_std": input_std.detach().cpu() if input_std is not None else None,
+            "metrics": metrics,
+        },
+        path,
+    )
+
+
+def write_hparams_txt(output_dir: Path, hparams: dict) -> None:
+    """
+    Write a simple human-readable hyperparameter/config file.
+    """
+    lines = []
+    for key in sorted(hparams.keys()):
+        lines.append(f"{key}: {hparams[key]}")
+    (output_dir / "hparams.txt").write_text("\n".join(lines) + "\n")
+
+
+# =========================================================
+# Main training loop
+# =========================================================
+def train_sae(
+    model: TopKSAE,
+    train_data,
+    val_data,
+    device: str,
+    output_dir: str | Path,
+    steps: int = 20_000,
+    batch_size: int = 8192,
+    lr: float = 3e-4,
+    weight_decay: float = 0.0,
+    eval_every: int = 1000,
+    val_batches: int = 32,
+    normalize_inputs: bool = True,
+    stats_batches: int = 64,
+    seed: int = 42,
+    early_stopping_patience: int | None = None,
+    early_stopping_min_delta: float = 0.0,
+    hparams_to_save: dict | None = None,
+):
+    """
+    Train a Top-K SAE.
+
+    Saves:
+    - best.pt  : best checkpoint by validation NMSE
+    - last.pt  : latest checkpoint
+    - history.json
+    - hparams.txt
+
+    Early stopping:
+    - If early_stopping_patience is not None, training stops when validation NMSE
+      has not improved by at least early_stopping_min_delta for that many evals.
+    """
+    torch.manual_seed(seed)
+
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if hparams_to_save is not None:
+        write_hparams_txt(output_dir, hparams_to_save)
+
+    model = model.to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+
+    input_mean = None
+    input_std = None
+    if normalize_inputs:
+        print("Estimating train activation mean/std...")
+        mean, std = estimate_dataset_stats(
+            dataset=train_data,
+            n_batches=stats_batches,
+            batch_size=batch_size,
+            device="cpu",
+        )
+        input_mean = mean.to(device)
+        input_std = std.to(device)
+
+    best_val_nmse = float("inf")
+    best_ckpt_path = output_dir / "best.pt"
+    last_ckpt_path = output_dir / "last.pt"
+
+    fire_counts = torch.zeros(model.d_sae, dtype=torch.long)
+    history = []
+
+    # Number of consecutive evaluation events with no meaningful improvement
+    evals_without_improvement = 0
+
+    model.train()
+    for step in trange(1, steps + 1, desc="training"):
+        x = train_data.sample_torch_batch(
+            batch_size=batch_size,
+            device=device,
+            out_dtype=torch.float32,
+            pin_memory=(device != "cpu"),
+        )
+
+        if input_mean is not None and input_std is not None:
+            x = (x - input_mean) / input_std
+
+        out = model(x)
+        loss = reconstruction_mse(x, out["x_hat"])
+
+        optimizer.zero_grad(set_to_none=True)
+        loss.backward()
+        optimizer.step()
+
+        with torch.no_grad():
+            active = (out["z"] > 0).any(dim=0).cpu().long()
+            fire_counts += active
+
+        if step % eval_every == 0 or step == 1:
+            val_metrics = evaluate_sae(
+                model=model,
+                dataset=val_data,
+                batch_size=batch_size,
+                n_batches=val_batches,
+                device=device,
+                input_mean=input_mean,
+                input_std=input_std,
+            )
+
+            dead_frac = dead_latent_fraction(fire_counts)
+
+            record = {
+                "step": step,
+                "train_loss": float(loss.item()),
+                "val_mse": val_metrics["mse"],
+                "val_nmse": val_metrics["nmse"],
+                "val_explained_variance": val_metrics["explained_variance"],
+                "val_l0": val_metrics["l0"],
+                "dead_latent_fraction": dead_frac,
+            }
+            history.append(record)
+            print(record)
+
+            # Always save the latest checkpoint after each evaluation
+            save_checkpoint(
+                path=last_ckpt_path,
+                model=model,
+                optimizer=optimizer,
+                step=step,
+                best_val_nmse=best_val_nmse,
+                input_mean=input_mean,
+                input_std=input_std,
+                metrics=record,
+            )
+
+            # Determine whether validation NMSE improved "enough"
+            improvement_threshold = best_val_nmse - early_stopping_min_delta
+            improved = val_metrics["nmse"] < improvement_threshold
+
+            if improved:
+                best_val_nmse = val_metrics["nmse"]
+                evals_without_improvement = 0
+
+                save_checkpoint(
+                    path=best_ckpt_path,
+                    model=model,
+                    optimizer=optimizer,
+                    step=step,
+                    best_val_nmse=best_val_nmse,
+                    input_mean=input_mean,
+                    input_std=input_std,
+                    metrics=record,
+                )
+            else:
+                evals_without_improvement += 1
+
+            # Check early stopping after each evaluation
+            if early_stopping_patience is not None and evals_without_improvement >= early_stopping_patience:
+                print(
+                    f"Early stopping triggered at step {step}. "
+                    f"No validation NMSE improvement >= {early_stopping_min_delta} "
+                    f"for {early_stopping_patience} evals."
+                )
+                break
+
+    with open(output_dir / "history.json", "w") as f:
+        json.dump(history, f, indent=2)
+
+    return {
+        "best_val_nmse": best_val_nmse,
+        "best_ckpt_path": str(best_ckpt_path),
+        "last_ckpt_path": str(last_ckpt_path),
+        "history": history,
+    }
+
+
+# =========================================================
+# CLI
+# =========================================================
+def parse_args():
+    parser = argparse.ArgumentParser(description="Train a Top-K SAE on ProGen-3 activation memmaps")
+
+    parser.add_argument("--repo-root", type=str, default=".", help="Path to repo root")
+
+    parser.add_argument(
+        "--train-bin",
+        type=str,
+        default="data/embeddings_memmap/layer6/s1a70_train_acts.f16.bin",
+        help="Relative path from repo-root to train memmap .bin",
+    )
+    parser.add_argument(
+        "--train-meta",
+        type=str,
+        default="data/embeddings_memmap/layer6/s1a70_train_acts.meta.json",
+        help="Relative path from repo-root to train memmap metadata",
+    )
+    parser.add_argument(
+        "--val-bin",
+        type=str,
+        default="data/embeddings_memmap/layer6/s1a70_val_acts.f16.bin",
+        help="Relative path from repo-root to val memmap .bin",
+    )
+    parser.add_argument(
+        "--val-meta",
+        type=str,
+        default="data/embeddings_memmap/layer6/s1a70_val_acts.meta.json",
+        help="Relative path from repo-root to val memmap metadata",
+    )
+
+    parser.add_argument("--d-sae", type=int, default=4096, help="Number of SAE latents")
+    parser.add_argument("--k", type=int, default=64, help="Top-k active latents")
+
+    parser.add_argument("--steps", type=int, default=20_000, help="Number of training steps")
+    parser.add_argument("--batch-size", type=int, default=8192, help="Training batch size")
+    parser.add_argument("--lr", type=float, default=3e-4, help="Learning rate")
+    parser.add_argument("--weight-decay", type=float, default=0.0, help="Weight decay")
+    parser.add_argument("--eval-every", type=int, default=1000, help="Evaluate every N steps")
+    parser.add_argument("--val-batches", type=int, default=32, help="Number of validation batches per eval")
+    parser.add_argument("--stats-batches", type=int, default=64, help="Number of batches for mean/std estimation")
+
+    parser.add_argument(
+        "--no-normalize-inputs",
+        action="store_true",
+        help="Disable z-score normalization of inputs",
+    )
+
+    # Early stopping controls
+    parser.add_argument(
+        "--early-stopping-patience",
+        type=int,
+        default=None,
+        help="Stop after this many evals without sufficient validation NMSE improvement",
+    )
+    parser.add_argument(
+        "--early-stopping-min-delta",
+        type=float,
+        default=0.0,
+        help="Minimum drop in validation NMSE required to count as an improvement",
+    )
+
+    parser.add_argument(
+        "--device",
+        type=str,
+        default="cuda" if torch.cuda.is_available() else "cpu",
+        help='Device, e.g. "cuda", "cuda:0", or "cpu"',
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default="results/topk_sae_layer6_run1",
+        help="Directory for checkpoints/history",
+    )
+
+    parser.add_argument("--seed", type=int, default=42, help="Random seed")
+
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+
+    repo_root = Path(args.repo_root)
+
+    train_bin = repo_root / args.train_bin
+    train_meta = repo_root / args.train_meta
+    val_bin = repo_root / args.val_bin
+    val_meta = repo_root / args.val_meta
+
+    print("Loading training memmap...")
+    train_data = ActivationMemmap(train_bin, train_meta)
+
+    print("Loading validation memmap...")
+    if not val_bin.exists() or not val_meta.exists():
+        raise FileNotFoundError(
+            f"Validation memmap files not found:\n"
+            f"  {val_bin}\n"
+            f"  {val_meta}"
+        )
+    val_data = ActivationMemmap(val_bin, val_meta)
+
+    d_in = train_data.dim
+
+    print(f"Train dataset length: {len(train_data)}")
+    print(f"Input dimension (d_in): {d_in}")
+    print(f"Device: {args.device}")
+
+    model = TopKSAE(
+        d_in=d_in,
+        d_sae=args.d_sae,
+        k=args.k,
+        use_pre_bias=True,
+        use_post_bias=True,
+        normalize_decoder=True,
+    )
+
+    # Record exactly what was used for this run
+    hparams_to_save = {
+        "repo_root": str(repo_root),
+        "train_bin": str(train_bin),
+        "train_meta": str(train_meta),
+        "val_bin": str(val_bin),
+        "val_meta": str(val_meta),
+        "d_in": d_in,
+        "d_sae": args.d_sae,
+        "k": args.k,
+        "steps": args.steps,
+        "batch_size": args.batch_size,
+        "lr": args.lr,
+        "weight_decay": args.weight_decay,
+        "eval_every": args.eval_every,
+        "val_batches": args.val_batches,
+        "stats_batches": args.stats_batches,
+        "normalize_inputs": not args.no_normalize_inputs,
+        "early_stopping_patience": args.early_stopping_patience,
+        "early_stopping_min_delta": args.early_stopping_min_delta,
+        "device": args.device,
+        "output_dir": str(repo_root / args.output_dir),
+        "seed": args.seed,
+    }
+
+    print("Starting training...")
+    results = train_sae(
+        model=model,
+        train_data=train_data,
+        val_data=val_data,
+        device=args.device,
+        output_dir=repo_root / args.output_dir,
+        steps=args.steps,
+        batch_size=args.batch_size,
+        lr=args.lr,
+        weight_decay=args.weight_decay,
+        eval_every=args.eval_every,
+        val_batches=args.val_batches,
+        normalize_inputs=not args.no_normalize_inputs,
+        stats_batches=args.stats_batches,
+        seed=args.seed,
+        early_stopping_patience=args.early_stopping_patience,
+        early_stopping_min_delta=args.early_stopping_min_delta,
+        hparams_to_save=hparams_to_save,
+    )
+
+    print("\nTraining complete.")
+    print(json.dumps(results, indent=2))
+
+
+if __name__ == "__main__":
+    main()
