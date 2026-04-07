@@ -1,0 +1,31 @@
+=== Overall counts ===
+split
+test      7963
+train    38318
+val       8354
+
+=== Counts by split and class ===
+class_name  S1A_trypsin_chymotrypsin  background
+split                                           
+test                            2693        5270
+train                          13586       24732
+val                             3059        5295
+
+=== Positive motif composition by split ===
+motif_class  both_motifs  histidine_only  neither_motif  serine_only
+split                                                               
+test                1902             367            231          193
+train               9884            2024            802          876
+val                 2173             487            223          176
+
+=== Sequence count fractions ===
+split
+test     0.145749
+train    0.701345
+val      0.152906
+
+=== Cluster counts by split ===
+split
+test      3772
+train    17516
+val       3800

@@ -1,0 +1,42 @@
+=== Total counts by split ===
+split
+train    38318
+val       8354
+test      7963
+
+=== Class counts by split ===
+class_name  S1A_trypsin_chymotrypsin  background
+split                                           
+train                          13586       24732
+val                             3059        5295
+test                            2693        5270
+
+=== Class fractions by split ===
+class_name  S1A_trypsin_chymotrypsin  background
+split                                           
+train                       0.354559    0.645441
+val                         0.366172    0.633828
+test                        0.338189    0.661811
+
+=== Positive motif counts by split ===
+motif_class  both_motifs  histidine_only  serine_only  neither_motif
+split                                                               
+train               9884            2024          876            802
+val                 2173             487          176            223
+test                1902             367          193            231
+
+=== Positive motif fractions by split ===
+motif_class  both_motifs  histidine_only  serine_only  neither_motif
+split                                                               
+train           0.727514        0.148977     0.064478       0.059031
+val             0.710363        0.159202     0.057535       0.072900
+test            0.706276        0.136279     0.071667       0.085778
+
+=== Cluster size summary by split and class ===
+split               class_name   count     mean       std  min  25%  50%  75%   max
+ test S1A_trypsin_chymotrypsin   689.0 3.908563 14.227453  1.0  1.0  1.0  2.0 307.0
+ test               background  3083.0 1.709374  2.030878  1.0  1.0  1.0  2.0  32.0
+train S1A_trypsin_chymotrypsin  3190.0 4.258934 18.195931  1.0  1.0  1.0  2.0 445.0
+train               background 14326.0 1.726372  2.352666  1.0  1.0  1.0  2.0 100.0
+  val S1A_trypsin_chymotrypsin   686.0 4.459184 20.355898  1.0  1.0  1.0  2.0 322.0
+  val               background  3114.0 1.700385  2.016592  1.0  1.0  1.0  2.0  39.0
