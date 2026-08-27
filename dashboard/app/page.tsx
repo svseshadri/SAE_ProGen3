@@ -1,3 +1,4 @@
+import { ProteinViewer } from "../components/protein-viewer";
 import { getDashboardData } from "./data";
 
 function pct(value: number) {
@@ -60,6 +61,49 @@ function RankBar({ label, value, accent }: { label: string; value: number; accen
         />
       </div>
     </div>
+  );
+}
+
+function MetricTooltip({
+  label,
+  description,
+  children,
+  className = "",
+}: {
+  label: string;
+  description: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`group relative ${className}`}>
+      {children}
+      <div className="pointer-events-none absolute left-1/2 top-full z-20 mt-2 w-56 -translate-x-1/2 rounded-xl border border-orange-200 bg-white/95 p-2.5 text-left text-[11px] leading-5 text-slate-700 opacity-0 shadow-[0_18px_40px_-28px_rgba(251,146,60,0.5)] transition duration-150 group-hover:opacity-100">
+        <div className="mb-1 font-semibold text-slate-800">{label}</div>
+        <div>{description}</div>
+      </div>
+    </div>
+  );
+}
+
+function DoseMetric({
+  label,
+  value,
+  description,
+  active,
+}: {
+  label: string;
+  value: string;
+  description: string;
+  active?: boolean;
+}) {
+  return (
+    <MetricTooltip label={label} description={description} className="rounded-xl p-2">
+      <div className={`${active ? "bg-white shadow-[inset_0_0_0_1px_rgba(251,146,60,0.12)]" : "bg-white/80"} rounded-xl p-2`}>
+        <div className="text-[10px] uppercase tracking-[0.12em] text-slate-500">{label}</div>
+        <div className="mt-1 text-lg font-semibold text-slate-800">{value}</div>
+      </div>
+    </MetricTooltip>
   );
 }
 
@@ -127,37 +171,10 @@ export default async function Home() {
           </div>
 
           <div className="relative mt-10 flex justify-center">
-            <div className="relative h-[260px] w-full max-w-5xl overflow-hidden rounded-[36px] border border-orange-200/80 bg-[radial-gradient(circle_at_center,_rgba(251,146,60,0.16),_rgba(255,255,255,0.7)_38%,_rgba(255,255,255,0.9)_100%)]">
-              <div className="absolute inset-x-10 bottom-6 top-14 rounded-[32px] border border-white/70 bg-[linear-gradient(135deg,#fff7f2_0%,#fee4d6_40%,#ffd2b7_100%)] shadow-[0_40px_80px_-30px_rgba(251,146,60,0.45)]" />
-              <div className="absolute left-1/2 top-1/2 h-52 w-[68%] -translate-x-1/2 -translate-y-1/2 rounded-[44px] border border-orange-200/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.78),rgba(255,210,183,0.45),rgba(253,164,175,0.22))] shadow-[inset_0_0_22px_rgba(251,146,60,0.14)]" />
-
-              <div className="absolute inset-0">
-                <div className="absolute left-[15%] top-[20%] h-2.5 w-2.5 rounded-full bg-orange-500/90 shadow-[0_0_22px_rgba(251,146,60,0.7)]" />
-                <div className="absolute left-[22%] top-[33%] h-2.5 w-2.5 rounded-full bg-pink-500/90 shadow-[0_0_20px_rgba(244,114,182,0.65)]" />
-                <div className="absolute left-[30%] top-[18%] h-2.5 w-2.5 rounded-full bg-orange-400/90 shadow-[0_0_20px_rgba(251,146,60,0.7)]" />
-                <div className="absolute left-[39%] top-[27%] h-2.5 w-2.5 rounded-full bg-pink-400/90 shadow-[0_0_20px_rgba(244,114,182,0.7)]" />
-                <div className="absolute left-[48%] top-[40%] h-3 w-3 rounded-full bg-amber-500/90 shadow-[0_0_22px_rgba(251,191,36,0.7)]" />
-                <div className="absolute left-[58%] top-[21%] h-2.5 w-2.5 rounded-full bg-orange-500/90 shadow-[0_0_20px_rgba(251,146,60,0.7)]" />
-                <div className="absolute left-[66%] top-[36%] h-2.5 w-2.5 rounded-full bg-pink-500/90 shadow-[0_0_20px_rgba(244,114,182,0.7)]" />
-                <div className="absolute left-[73%] top-[52%] h-2.5 w-2.5 rounded-full bg-orange-400/90 shadow-[0_0_20px_rgba(251,146,60,0.7)]" />
-                <div className="absolute left-[46%] top-[66%] h-2.5 w-2.5 rounded-full bg-pink-400/90 shadow-[0_0_20px_rgba(244,114,182,0.7)]" />
-                <div className="absolute left-[28%] top-[62%] h-2.5 w-2.5 rounded-full bg-orange-500/90 shadow-[0_0_20px_rgba(251,146,60,0.65)]" />
-
-                <div className="absolute left-[15%] top-[20%] h-24 w-px bg-orange-300/60" />
-                <div className="absolute left-[22%] top-[33%] h-18 w-px bg-pink-300/60" />
-                <div className="absolute left-[30%] top-[18%] h-24 w-px bg-orange-300/60" />
-                <div className="absolute left-[39%] top-[27%] h-18 w-px bg-pink-300/60" />
-                <div className="absolute left-[48%] top-[40%] h-22 w-px bg-amber-300/70" />
-                <div className="absolute left-[58%] top-[21%] h-24 w-px bg-orange-300/60" />
-                <div className="absolute left-[66%] top-[36%] h-18 w-px bg-pink-300/60" />
-                <div className="absolute left-[46%] top-[66%] h-16 w-px bg-pink-300/60" />
-
-                <div className="absolute left-[15%] top-[20%] h-px w-[17%] bg-orange-300/60" />
-                <div className="absolute left-[30%] top-[18%] h-px w-[18%] bg-pink-300/60" />
-                <div className="absolute left-[39%] top-[27%] h-px w-[17%] bg-orange-300/60" />
-                <div className="absolute left-[48%] top-[40%] h-px w-[15%] bg-amber-300/60" />
-                <div className="absolute left-[28%] top-[62%] h-px w-[18%] bg-pink-300/60" />
-                <div className="absolute left-[46%] top-[66%] h-px w-[20%] bg-orange-300/60" />
+            <div className="pointer-events-none absolute inset-x-[18%] top-1/2 h-48 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(251,146,60,0.18),rgba(244,114,182,0.12),rgba(255,255,255,0)_70%)] blur-3xl" />
+            <div className="relative flex h-[260px] w-full max-w-[820px] items-center justify-center overflow-hidden">
+              <div className="relative h-[220px] w-[88%] max-w-[760px]">
+                <ProteinViewer />
               </div>
             </div>
           </div>
@@ -224,14 +241,59 @@ export default async function Home() {
             </div>
             <div className="space-y-5">
               {topFeatures.map((feature, index) => (
-                <div key={`${feature.latent_id}-${feature.annotation}`} className="rounded-[22px] border border-orange-100 bg-[#fffaf7] p-4">
-                  <div className="mb-3 flex items-center justify-between">
+                <div
+                  key={`${feature.latent_id}-${feature.annotation}`}
+                  className={`rounded-[22px] border p-4 ${
+                    index === 0
+                      ? "border-orange-300 bg-[linear-gradient(135deg,#fffaf7,#fff1ed)] shadow-[0_18px_40px_-28px_rgba(251,146,60,0.55)]"
+                      : "border-orange-100 bg-[#fffaf7]"
+                  }`}
+                >
+                  <div className="mb-3 flex items-center justify-between gap-3">
                     <div>
                       <div className="text-[11px] uppercase tracking-[0.22em] text-slate-500">#{index + 1} latent {feature.latent_id}</div>
-                      <div className="mt-1 text-lg font-medium text-slate-800">{feature.annotation}</div>
+                      <div className={`mt-1 ${index === 0 ? "text-xl font-semibold text-slate-800" : "text-lg font-medium text-slate-800"}`}>
+                        {feature.annotation}
+                      </div>
                     </div>
-                    <div className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs text-emerald-700">q={feature.q_value.toFixed(3)}</div>
+                    <div className={`rounded-full border px-2.5 py-1 text-xs ${index === 0 ? "border-orange-300 bg-orange-100 text-orange-700" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
+                      q={feature.q_value.toFixed(3)}
+                    </div>
                   </div>
+
+                  <div className="mb-3 grid gap-3 md:grid-cols-3">
+                    <MetricTooltip
+                      label="AUROC"
+                      description="AUROC measures how well the latent activation separates the positive biological class from background sequences, with higher values indicating stronger specificity."
+                      className={index === 0 ? "rounded-[16px] border border-orange-200 bg-white shadow-[inset_0_0_0_1px_rgba(251,146,60,0.06)]" : "rounded-[16px] border border-orange-100 bg-white/80"}
+                    >
+                      <div className="p-3">
+                        <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500">AUROC</div>
+                        <div className="mt-2 text-2xl font-semibold text-slate-800">{feature.auroc.toFixed(3)}</div>
+                      </div>
+                    </MetricTooltip>
+                    <MetricTooltip
+                      label="Point-biserial"
+                      description="Point-biserial measures the strength of association between activation and class membership, reflecting how sharply the feature separates the positive set from background."
+                      className={index === 0 ? "rounded-[16px] border border-pink-200 bg-white shadow-[inset_0_0_0_1px_rgba(244,114,182,0.08)]" : "rounded-[16px] border border-orange-100 bg-white/80"}
+                    >
+                      <div className="p-3">
+                        <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Point-biserial</div>
+                        <div className="mt-2 text-2xl font-semibold text-slate-800">{Math.abs(feature.point_biserial_r).toFixed(3)}</div>
+                      </div>
+                    </MetricTooltip>
+                    <MetricTooltip
+                      label="Odds ratio"
+                      description="Odds ratio compares the odds of observing the feature in the positive set versus background, with larger values indicating stronger biological enrichment."
+                      className={index === 0 ? "rounded-[16px] border border-amber-200 bg-white shadow-[inset_0_0_0_1px_rgba(251,191,36,0.08)]" : "rounded-[16px] border border-orange-100 bg-white/80"}
+                    >
+                      <div className="p-3">
+                        <div className="text-[10px] uppercase tracking-[0.18em] text-slate-500">Odds ratio</div>
+                        <div className="mt-2 text-2xl font-semibold text-slate-800">{feature.fisher_odds_ratio.toFixed(1)}</div>
+                      </div>
+                    </MetricTooltip>
+                  </div>
+
                   <div className="grid gap-3 md:grid-cols-3">
                     <RankBar label="AUROC" value={feature.auroc} accent="#fb923c" />
                     <RankBar label="r" value={Math.abs(feature.point_biserial_r)} accent="#f472b6" />
@@ -247,17 +309,46 @@ export default async function Home() {
               <div className="text-[11px] uppercase tracking-[0.22em] text-slate-500">Causal steering</div>
               <h2 className="mt-2 text-2xl font-semibold text-slate-800">Dose-response</h2>
               <div className="mt-5 space-y-4">
-                {candidateFeatures.map((feature) => (
-                  <div key={feature.featureId} className="rounded-[20px] border border-orange-100 bg-[#fffaf7] p-4">
-                    <div className="flex items-center justify-between">
+                {candidateFeatures.map((feature, index) => (
+                  <div
+                    key={feature.featureId}
+                    className={`rounded-[20px] border p-4 ${
+                      index === 0
+                        ? "border-orange-300 bg-[linear-gradient(135deg,#fffaf7,#fff1ed)] shadow-[0_18px_40px_-28px_rgba(251,146,60,0.55)]"
+                        : "border-orange-100 bg-[#fffaf7]"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-3">
                       <div className="text-base font-medium text-slate-800">Feature {feature.featureId}</div>
-                      <div className="rounded-full bg-orange-100 px-2.5 py-1 text-xs text-orange-700">Gap {feature.doseGap.toFixed(2)}</div>
+                      <MetricTooltip
+                        label="Gap"
+                        description="Gap is the difference between the positive and negative specificity peaks. A larger gap means the feature responds much more strongly to the intended biological condition than to background or unrelated motifs."
+                        className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs ${index === 0 ? "bg-orange-100 text-orange-700" : "bg-orange-50 text-orange-600"}`}
+                      >
+                        <span>Gap {feature.doseGap.toFixed(2)}</span>
+                      </MetricTooltip>
                     </div>
                     <div className="mt-3 text-sm text-slate-600">{feature.conceptLabel}</div>
+
                     <div className="mt-4 grid grid-cols-3 gap-2 text-xs text-slate-600">
-                      <div className="rounded-xl bg-white p-2 shadow-[inset_0_0_0_1px_rgba(251,146,60,0.12)]"><div>Peak</div><div className="mt-1 text-lg font-medium text-slate-800">{feature.peakSpec.toFixed(2)}</div></div>
-                      <div className="rounded-xl bg-white p-2 shadow-[inset_0_0_0_1px_rgba(244,114,182,0.12)]"><div>Dose</div><div className="mt-1 text-lg font-medium text-slate-800">{feature.peakDose.toFixed(2)}</div></div>
-                      <div className="rounded-xl bg-white p-2 shadow-[inset_0_0_0_1px_rgba(251,146,60,0.12)]"><div>ΔNLL</div><div className="mt-1 text-lg font-medium text-slate-800">{feature.peakDeltaNll.toFixed(3)}</div></div>
+                      <DoseMetric
+                        label="Peak"
+                        value={feature.peakSpec.toFixed(2)}
+                        description="Peak is the maximum effect size reached as the intervention strength increases, capturing the strongest causal response for this feature."
+                        active={index === 0}
+                      />
+                      <DoseMetric
+                        label="Dose"
+                        value={feature.peakDose.toFixed(2)}
+                        description="Dose is the intervention level at which the feature reaches its strongest response, indicating the sensitivity threshold of the causal effect."
+                        active={index === 0}
+                      />
+                      <DoseMetric
+                        label="ΔNLL"
+                        value={feature.peakDeltaNll.toFixed(3)}
+                        description="ΔNLL measures how much predictive loss changes under the intervention; larger values indicate stronger causal influence on generation quality."
+                        active={index === 0}
+                      />
                     </div>
                   </div>
                 ))}
