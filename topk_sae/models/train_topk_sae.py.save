@@ -76,7 +76,7 @@ class TopKSAE(nn.Module):
 
         z = torch.zeros_like(z_relu)
         z.scatter_(dim=-1, index=topk_idx, src=topk_vals)
-
+ 
         return z, topk_idx
 
     def decode(self, z: torch.Tensor) -> torch.Tensor:
