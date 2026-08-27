@@ -111,6 +111,13 @@ export default async function Home() {
           </div>
 
           <div className="text-center">
+            <div className="mb-4 flex justify-center">
+              <div className="inline-flex items-center gap-2 rounded-full border border-orange-200 bg-white/80 px-3 py-1.5 text-[10px] uppercase tracking-[0.25em] text-slate-600">
+                <span>Sri Seshadri</span>
+                <span className="text-orange-400">•</span>
+                <span>Romero Lab</span>
+              </div>
+            </div>
             <h1 className="text-4xl font-semibold tracking-[-0.06em] text-slate-800 md:text-7xl">
               ProGen3 Feature Atlas
             </h1>
