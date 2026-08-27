@@ -2,6 +2,7 @@ import numpy as np
 import torch
 
 from scripts.evaluate_reconstruction import (
+    additive_sae_intervention,
     compute_explained_variance,
     compute_mean_kl,
     compute_nmse,
@@ -37,3 +38,25 @@ def test_nmse_and_explained_variance_are_reasonable():
     assert ev >= 0.0
     assert ev <= 1.0
     assert np.isfinite(ev)
+
+
+def test_additive_identity_intervention_is_exact_noop():
+    torch.manual_seed(0)
+    hidden = torch.randn(2, 5, dtype=torch.float32)
+    dec_weight = torch.randn(5, 4, dtype=torch.float32)
+
+    class DummySAE:
+        def __init__(self):
+            self.decoder = type("D", (), {"weight": dec_weight})()
+
+        def __call__(self, x):
+            z = torch.relu(x @ torch.eye(5, dtype=torch.float32))
+            return {"z": z}
+
+        def decode(self, z):
+            return z @ dec_weight.T
+
+    sae = DummySAE()
+    target = torch.tensor([[1.0, 2.0, 3.0, 4.0], [0.5, 1.5, 2.5, 3.5]], dtype=torch.float32)
+    out = additive_sae_intervention(hidden, sae, feature_id=0, target_activation=target[:, 0], input_mean=None, input_std=None)
+    assert torch.allclose(out, hidden, atol=1e-6, rtol=0.0)
