@@ -1,89 +1,84 @@
-# ProGen-3 Sparse Autoencoder — Feature Atlas & Dashboard
+# ProGen-3 Sparse Autoencoder — Model, Findings, and Feature Atlas
 
-This repository contains analysis, results, and a Next.js dashboard for the ProGen-3 sparse autoencoder project. The dashboard surfaces layer-6 sparse latent features discovered by the model, biological enrichment evidence, and causal dose-response experiments used to evaluate whether those latents can steer generation.
+This repository contains the analyses, model outputs, and a presentation dashboard for a sparse autoencoder trained on protein sequences (ProGen-3). This README focuses on the model, experimental workflows, key findings, and the artifact outputs you can inspect to reproduce or evaluate results.
 
-This README documents the project state as of the latest work and explains how to view and build the dashboard locally.
+## Model summary
 
-## Key Goals
+- Architecture: ProGen-3 sparse autoencoder variant with a Top‑K sparsity mechanism.
+- Target representation: layer-6 dictionary (run-specific naming indicates dictionary size and Top‑K, e.g. `d4096_k32`).
+- Training objective: learn a sparse dictionary so that individual latent dimensions encode compact biological features (motifs, enzymatic signatures) rather than broadly distributed signals.
 
-- Identify biologically meaningful sparse latent features from a ProGen-3 autoencoder trained on protein sequences.
-- Summarize evidence (enrichment statistics, AUROC, odds ratios, point-biserial correlations).
-- Visualize dose-response / causal steering experiments showing how feature activation affects generation.
-- Present a clean, editorial dashboard (Apple-inspired aesthetic) to communicate findings.
+## Datasets & preprocessing
 
-## Where to look (important paths)
+- Positive and background FASTA sources, clusters, and rep sequences are stored under `data/fasta` and `data/mmseqs`.
+- Preprocessed CSV splits, memmap embeddings, and QC outputs are under `data/processed`, `data/embeddings_memmap`, and `data/plots/qc_plots`.
+- Scripts used for preprocessing are in `data/utils` (notable: `convert_pt_to_memmap.py`, `build_s1a_dataset.py`, `prepare_fastas.py`).
 
-- **Dashboard app**: [dashboard](dashboard) — Next.js App Router, TypeScript, Tailwind CSS.
-	- Main page: [dashboard/app/page.tsx](dashboard/app/page.tsx)
-	- Client-side protein viewer: [dashboard/components/protein-viewer.tsx](dashboard/components/protein-viewer.tsx)
-	- Dashboard data loader: [dashboard/app/data.ts](dashboard/app/data.ts)
-	- Global styles: [dashboard/app/globals.css](dashboard/app/globals.css)
+## Core analyses
 
-- **Model results & analysis**: [results](results)
-	- Feature enrichment: `global_feature_enrichment.csv`
-	- Causal dose-response: `causal_feature_dose_response.csv`
-	- Model checkpoints and training history under `results/topk_sae_layer6_d4096_k32_run1/`
+1. Feature discovery & ranking
 
-- **Data / processed**: [data/processed](data/processed) — CSVs, memmaps, and sequence FASTAs used for analyses.
+   - Latent dimensions were scored using reconstruction impact, sparsity measures, and biological enrichment signals. Per-run summaries appear under `results/*/analysis/latent_summary.json`.
 
-- **Utilities**: `data/utils` and `topk_sae` contain dataset and model training utilities.
+2. Biological enrichment
 
-## Dashboard: running locally
+   - Global enrichment tables and per-feature summaries are under `results/global_feature_enrichment.csv` and in per-run analysis folders.
+   - Computed metrics include AUROC, point-biserial correlations, Fisher odds ratios, and q-values for multiple-testing control.
 
-Prereqs: Node.js (recommended >=18), npm, and a working shell. The dashboard expects the repository results to be present in `results/` and some data files under `data/`.
+3. Causal dose-response interventions
 
-1. Open a terminal and change into the dashboard folder:
+   - For top candidates, controlled increases of latent activations were applied during generation to produce dose-response curves showing how likelihoods and motif frequencies change with activation magnitude.
+   - Results are available in `results/causal_feature_dose_response.csv` and summarized visually in the `dashboard/` app.
+
+4. Reconstruction and ablation studies
+
+   - Ablations measure how removing or zeroing specific latents affects reconstruction error and downstream metrics. See `results/reconstruction_evaluation.summary.json`.
+
+## Key findings (high level)
+
+- Multiple layer-6 latents consistently enrich for proteolytic/enzymatic motifs (examples: trypsin/chymotrypsin-like patterns) across independent metrics.
+- Dose-response experiments provide initial causal evidence that manipulating certain latents shifts generation outcomes in interpretable directions (likelihood and motif frequency), supporting the hypothesis that those latents control specific generative properties.
+
+## Primary artifacts and where to find them
+
+- `results/global_feature_enrichment.csv` — aggregated enrichment for candidate latents.
+- `results/causal_feature_dose_response.csv` — per-feature dose-response measurement table.
+- `results/reconstruction_evaluation.summary.json` — reconstruction and ablation metrics.
+- `results/topk_sae_layer6_d4096_k32_run1/` — per-run artifacts, checkpoints, history (`history.json`), and analysis outputs.
+
+## Interpretation guidance & caveats
+
+- Enrichment is correlational; causal claims require careful controls. Our dose-response tests extend claims toward causality but do not fully rule out confounds.
+- Validate top candidates by inspecting representative sequences, sequence logos, and by testing on held-out or orthogonal datasets.
+- Review q-values, sample sizes, and effect sizes in per-feature outputs before making strong biological assertions.
+
+## Dashboard (presentation layer)
+
+The `dashboard/` folder contains a Next.js app used to present and explore results. It is a visualization and communication tool — the raw CSV/JSON artifacts in `results/` are the authoritative data sources for analysis and publication.
+
+Notable implementation details:
+
+- The dashboard uses a client-only `3dmol` viewer for the protein hero; the viewer is dynamically imported and configured with a transparent WebGL canvas (`backgroundAlpha: 0`) so the page background shows through.
+- Main charts are inline SVGs tuned for editorial spacing; the explained-variance chart uses padded plotting margins and axis labels to avoid overlap between data and labels.
+
+## Quick developer note (optional)
+
+If you want to run the dashboard locally for inspection:
 
 ```bash
 cd dashboard
-```
-
-2. Install dependencies (if not already installed):
-
-```bash
 npm install
-```
-
-3. Run the development server:
-
-```bash
 npm run dev
 ```
 
-4. Build for production (static prerender):
+This note is intentionally minimal — the README prioritizes the model, analyses, and artifacts.
 
-```bash
-npm run build
-```
+## Suggested next steps for research
 
-Notes:
-- The hero protein visualization uses `3dmol` and is initialized client-side. The viewer is configured with a transparent WebGL canvas (`backgroundAlpha: 0`) so the dashboard background shows through.
-- If you encounter SSR errors referencing `window` or `3dmol`, ensure the viewer is only imported/initialized in client-side code.
+- Add per-feature sequence logos and motif alignments for human verification.
+- Extend causal baselines (random-latent, counterfactuals) and include negative controls.
+- Validate candidates on independent datasets or through orthogonal experimental assays where possible.
 
-## Charting and visual conventions
+## Authors & contact
 
-- The dashboard follows a soft editorial palette (warm white / pink / orange) and is intentionally minimal.
-- Charts are implemented as inline SVGs on the main page and are responsive to container width. Axis labels, margins, and spacing are tuned to avoid overlap with plotted data.
-
-## Recent edits & important implementation notes
-
-- Protein viewer: `dashboard/components/protein-viewer.tsx` — updated to import `3dmol` dynamically and set `backgroundAlpha: 0` and `viewer.setBackgroundColor(0x000000, 0)` to ensure canvas transparency.
-- Chart layout: the explained-variance chart on the home page uses padded plotting margins so the orange line never overlaps axis labels; axis titles and tick labels are placed outside the plotting area.
-
-## Next steps / improvements (ideas)
-
-- Add interactive axis zoom/hover tooltips to charts.
-- Add unit/integration tests for data parsing in `dashboard/app/data.ts`.
-- Expand dashboard pages to include a feature detail view with sequence logos and example generations.
-
-## Contact / attribution
-
-Project: ProGen-3 sparse autoencoder feature atlas
-Authors & lab: Sri Seshadri / Romero Lab
-
-If you want edits to the README or the dashboard content, tell me which sections to emphasize or any additional artifacts to surface.
-
----
-
-Generated and maintained alongside the dashboard code at `dashboard/`.
-
+Sri Seshadri / Romero Lab
