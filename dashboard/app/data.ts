@@ -121,6 +121,29 @@ function readJson<T>(filePath: string): T {
   return JSON.parse(fs.readFileSync(filePath, "utf8")) as T;
 }
 
+function formatBiologicalLabel(label: string): string {
+  const normalized = label.trim();
+  const lower = normalized.toLowerCase();
+
+  if (["class_label", "class_name", "s1a_trypsin_chymotrypsin"].includes(lower)) {
+    return "Trypsin/chymotrypsin-like protease";
+  }
+  if (lower.includes("ps00134")) {
+    return "PS00134 catalytic motif enrichment";
+  }
+  if (lower.includes("ps00135")) {
+    return "PS00135 catalytic motif enrichment";
+  }
+  if (lower.includes("ipr001314") || lower.includes("s1 protease")) {
+    return "S1 serine protease domain enrichment";
+  }
+  if (lower.includes("background")) {
+    return "Background sequence set";
+  }
+
+  return normalized.replace(/_/g, " ");
+}
+
 function toNumber(value: string | number | undefined, fallback = 0): number {
   if (typeof value === "number") return Number.isFinite(value) ? value : fallback;
   const n = Number(value);
@@ -145,7 +168,7 @@ function summarizeFeatureDoseRows(rows: Record<string, string>[]): FeatureSummar
     if (!grouped.has(featureId)) {
       grouped.set(featureId, {
         featureId,
-        conceptLabel: String(row.matched_concept ?? "feature"),
+        conceptLabel: formatBiologicalLabel(String(row.matched_concept ?? "feature")),
         series: { positive: [], negative: [] },
       });
     }
@@ -216,7 +239,7 @@ export async function getDashboardData(): Promise<DashboardData> {
 
   const featureRankings = globalFeatureCsv.slice(0, 20).map((row) => ({
     latent_id: Number(row.latent_id ?? 0),
-    annotation: String(row.annotation ?? "class_label"),
+    annotation: formatBiologicalLabel(String(row.annotation ?? "class_label")),
     rank: Number(row.rank ?? 0),
     n_positive: Number(row.n_positive ?? 0),
     n_negative: Number(row.n_negative ?? 0),
