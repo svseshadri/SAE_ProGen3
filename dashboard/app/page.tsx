@@ -112,11 +112,10 @@ export default async function Home() {
 
           <div className="text-center">
             <h1 className="text-4xl font-semibold tracking-[-0.06em] text-slate-800 md:text-7xl">
-              Sparse Autoencoder<br />
-              <span className="bg-gradient-to-r from-pink-500 via-orange-400 to-amber-400 bg-clip-text text-transparent">Atlas</span>
+              ProGen3 Feature Atlas
             </h1>
             <p className="mx-auto mt-5 max-w-3xl text-base text-slate-600 md:text-xl">
-              Layer-6 sparse features that isolate protein motifs, track biological signal, and show dose-sensitive causal control over ProGen-3.
+              Layer 6 sparse features that causally identify trypsin/chymotrypsin-like motifs, track biological signal, and show dose-sensitive causal control over ProGen3 generation.
             </p>
           </div>
 
