@@ -4,22 +4,27 @@ Last updated: 2026-08-29
 
 ## Current stage
 
-Confirmatory statistical validation of causal feature selectivity.
+Directionality metric audit complete; signed localized evidence unavailable in
+the current canonical causal artifact.
 
 The SAE training, biological feature-enrichment, reconstruction diagnostics,
-residual analysis, and additive intervention machinery are complete enough for
-the current scientific question.
+residual analysis, additive intervention machinery, and prespecified
+fixed-effects confirmatory statistics are complete enough for the current
+scientific question.
 
-The immediate question is no longer whether the intervention code works.
+The immediate question is no longer whether the intervention code works or
+whether the fixed-effects dose x concept interaction is positive. The
+directionality audit established that the stored localized motif-specificity
+readouts are unsigned magnitude summaries.
 
 The current question is:
 
-> Does latent 3256 show a statistically robust dose-dependent effect that is
-> stronger in the matched PS00134-positive biological context than in the
-> PS00134-negative context?
+> Should the project collect or recover a signed localized log-probability
+> readout before deciding whether latent 3256 is ready for autoregressive
+> generation?
 
-Do not broaden or redesign the intervention experiment until this confirmatory
-question is resolved.
+Do not advance to autoregressive generation on the basis of the current
+localized directionality evidence alone.
 
 ---
 
@@ -35,8 +40,9 @@ as a biologically selective causal control direction rather than merely:
 The current lead hypothesis is that latent 3256 is selectively associated with
 PS00134-related biology.
 
-If this hypothesis survives confirmatory statistics, the next major experiment
-is autoregressive ProGen-3 generation under additive SAE steering.
+The fixed-effects confirmatory statistics support a positive 3256 interaction,
+but full promotion is currently blocked because the existing canonical causal
+artifact does not contain a signed localized biological readout.
 
 ---
 
@@ -67,6 +73,15 @@ is autoregressive ProGen-3 generation under additive SAE steering.
   non-identifiable.
 - Reduced random-intercept mixed-effects model attempted and also found to have
   singular/boundary random-effects behavior.
+- Prespecified fixed-effects OLS fallback with sequence-clustered robust
+  uncertainty completed.
+- Whole-sequence bootstrap completed with 5,000 requested replicates for each
+  estimable biological candidate.
+- Benjamini-Hochberg FDR correction applied across the estimable biological
+  candidate family.
+- Directionality metric audit completed from existing causal artifacts.
+- Publication-quality figure-generation script added for reproducible figures
+  derived from canonical artifacts.
 
 ---
 
@@ -191,8 +206,10 @@ Matched concept:
 
 Current interpretation:
 
-3256 is the strongest context-selective causal candidate among the tested
-features.
+3256 has a statistically supported positive dose x concept interaction in the
+prespecified fixed-effects fallback analysis, but it should not yet be promoted
+to a formally validated causal controller because the current canonical causal
+artifact does not preserve signed localized motif effects.
 
 Its value as the current lead comes from positive-versus-negative selectivity,
 not maximum raw steering magnitude.
@@ -325,11 +342,9 @@ They do not replace the prespecified confirmatory interaction analysis.
 ## Current statistical status
 
 The initial confirmatory model attempted to estimate a richer fixed-effects /
-random-effects structure.
+random-effects structure and failed with a singular matrix.
 
-That model failed with a singular matrix.
-
-A reduced mixed-effects model retaining the primary dose × concept term and a
+A reduced mixed-effects model retaining the primary dose x concept term and a
 sequence random intercept was then attempted.
 
 The reduced model produced warnings including:
@@ -338,16 +353,103 @@ The reduced model produced warnings including:
 - MLE on the boundary of the parameter space;
 - unstable / unidentified random-effect variance.
 
-These fits must be treated as numerically unstable and inconclusive.
+These mixed-effects fits remain numerically unstable and inconclusive.
 
-They are not valid confirmatory evidence for or against the biological
-interaction.
+The prespecified fallback fixed-effects analysis is now complete using:
 
-Do not continue simplifying or modifying the random-effects structure merely
-to obtain a favorable result.
+    motif_specificity_score ~ dose_centered * concept_positive
 
-The mixed-effects pathway is considered exhausted for the current dataset
-unless new data materially change identifiability.
+with sequence-clustered robust uncertainty, whole-sequence bootstrap, and
+Benjamini-Hochberg FDR across estimable biological candidates.
+
+Canonical outputs:
+
+- `results/confirmatory_causal_statistics.csv`
+- `results/confirmatory_causal_bootstrap.csv`
+
+Estimable biological candidate results:
+
+Feature 3256 / PS00134:
+
+- beta_dose_x_concept: 0.0118277
+- clustered 95% CI: [0.0013365, 0.0223188]
+- clustered p-value: 0.0277552
+- BH-FDR q-value: 0.0277552
+- bootstrap 95% interval: [0.002200, 0.023565]
+- bootstrap fraction positive: 0.9922
+- support: 54 concept-positive sequences, 10 concept-negative sequences
+
+Feature 2942 / both catalytic motifs:
+
+- beta_dose_x_concept: 0.0316049
+- clustered 95% CI: [0.0153850, 0.0478249]
+- clustered p-value: 0.0002411
+- BH-FDR q-value: 0.0007233
+- bootstrap 95% interval: [0.015005, 0.047627]
+- bootstrap fraction positive: 0.9998
+- support: 49 concept-positive sequences, 15 concept-negative sequences
+
+Feature 1644 / PS00135:
+
+- beta_dose_x_concept: 0.0206628
+- clustered 95% CI: [0.0051296, 0.0361961]
+- clustered p-value: 0.0099440
+- BH-FDR q-value: 0.0149159
+- bootstrap 95% interval: [0.005468, 0.036630]
+- bootstrap fraction positive: 0.9960
+- support: 49 concept-positive sequences, 15 concept-negative sequences
+
+Feature 727 / IPR001314 was not estimable for the interaction because the
+current matched dataset contains 64 concept-positive sequences and 0 genuine
+concept-negative sequences for its matched concept.
+
+The matched-control feature was flat and did not reproduce the interaction, but
+it also lacks a concept-negative cohort and is not part of the biological
+candidate FDR family.
+
+The 3256 statistical interaction criteria passed for the unsigned
+motif-specificity magnitude metric, but the full promotion gate remains
+inconclusive because the canonical causal artifact does not preserve signed
+localized motif effects. For 3256, concept-positive suppression-minus-no-op was
+0.1301 and amplification-minus-no-op was 0.4861; concept-negative
+suppression-minus-no-op was 0.1038 and amplification-minus-no-op was 0.4114.
+The directionality audit showed that this is not a valid signed-directionality
+failure: the stored localized metric uses absolute patched-minus-base
+true-token log-probability shifts.
+
+Canonical directionality-audit outputs:
+
+- `results/signed_directionality_metric_audit.csv`
+- `results/signed_directionality_statistics.csv`
+- `results/signed_directionality_by_dose.csv`
+- `results/signed_directionality_bootstrap.csv`
+- `results/signed_directionality_sequence_slopes.csv`
+- `results/signed_directionality_sequence_slope_summary.csv`
+
+Audited metric definitions from `scripts/causal_feature_dose_response.py`:
+
+- `motif_delta_logprob`: mean absolute patched-minus-base true-token
+  log-probability shift for the top-k positions with largest absolute changes;
+- `nonmotif_delta_logprob`: mean absolute patched-minus-base true-token
+  log-probability shift for the remaining valid positions;
+- `motif_specificity_score`: `motif_delta_logprob - nonmotif_delta_logprob`, a
+  difference of unsigned magnitude summaries.
+
+Therefore `motif_specificity_score` does not preserve the sign of the underlying
+log-probability effect. Positive values mean the selected top-k positions changed
+by larger magnitude than the remaining positions, not that motif probability
+increased.
+
+The existing signed global readout `global_signed_nll_effect = -delta_nll` was
+recorded as an ancillary nonlocalized diagnostic only. For feature 3256, its
+dose x concept interaction was 0.000791 with clustered 95% CI [-0.000201,
+0.001783], p = 0.1162, and whole-sequence bootstrap 95% interval [-0.000220,
+0.001750]. This does not provide localized biological directionality evidence.
+
+Directionality gate classification: INCONCLUSIVE. The prior apparent
+directionality failure was not scientifically meaningful as a signed biological
+failure, but the current artifacts are insufficient to show coherent opposing
+signed localized effects under suppression versus amplification.
 
 ---
 
@@ -394,48 +496,18 @@ scientific meaning.
 
 ## Immediate next task
 
-Run the confirmatory analysis on the matched causal dataset.
+Decide whether a signed localized log-probability readout is required before
+autoregressive generation.
 
-Primary input:
+The existing causal artifact cannot adjudicate signed localized directionality
+because the localized readouts were stored after applying absolute value. If the
+directionality gate remains mandatory, the next scientifically appropriate step
+is to recover or regenerate signed localized token-level summaries with clear
+provenance, while preserving the frozen additive intervention semantics and
+existing cohort definitions.
 
-    results/causal_feature_dose_response.csv
-
-For each estimable biological candidate:
-
-1. confirm cohort support and required columns;
-2. center dose around the no-op / native intervention point;
-3. fit:
-
-       motif_specificity_score ~ dose * concept_positive
-
-4. estimate uncertainty using sequence-clustered robust standard errors;
-5. extract:
-   - dose coefficient
-   - concept coefficient
-   - dose × concept coefficient
-   - interaction standard error
-   - interaction 95% confidence interval
-   - interaction p-value
-   - number of unique concept-positive sequences
-   - number of unique concept-negative sequences
-6. bootstrap whole sequence IDs with replacement;
-7. retain all repeated dose observations belonging to each resampled sequence;
-8. refit the same interaction model for each bootstrap replicate;
-9. report:
-   - bootstrap median interaction
-   - bootstrap 2.5th percentile
-   - bootstrap 97.5th percentile
-   - fraction of bootstrap interactions > 0
-10. apply Benjamini-Hochberg FDR across estimable candidate interaction tests;
-11. report the FDR-adjusted q-value for each estimable feature.
-
-Do not bootstrap individual dose rows as if they were independent proteins.
-
-Do not force a concept-selectivity test for feature 727 if the required
-concept-negative support is absent.
-
-Do not alter the additive intervention implementation while performing this
-analysis.
+Do not advance to generation unless the directionality limitation is explicitly
+accepted or resolved with a signed localized artifact.
 
 ---
 
@@ -506,15 +578,15 @@ Do not silently weaken or redefine the gate after seeing the result.
 
 ## Current scientific claim
 
-The strongest defensible statement before completion of the confirmatory
-analysis is:
+The strongest defensible statement after the directionality audit is:
 
-> Latent 3256 is the leading concept-selective causal candidate among the tested
-> SAE features. It retains a clear positive-versus-negative motif-specificity
-> advantage under matched model disturbance, while the control remains flat and
-> latent 2942 behaves as a stronger but less selective steering direction.
-> Formal statistical confirmation of the dose × concept interaction remains
-> pending.
+> Latent 3256 has a statistically supported positive dose x PS00134-context
+> interaction under the prespecified fixed-effects fallback analysis. However,
+> it should remain a leading statistically supported candidate rather than a
+> formally validated causal controller, because the current canonical causal
+> artifact does not preserve signed localized motif effects and therefore cannot
+> establish coherent opposing biological direction under suppression versus
+> amplification.
 
 Do not currently describe 3256 as a formally validated causal controller of
 PS00134 biology.
@@ -588,11 +660,14 @@ significant result.
 
 ## Unresolved questions
 
-- Does feature 3256 survive sequence-aware confirmatory uncertainty estimation?
-- Is its apparent selectivity distributed across many proteins or driven by a
-  small responsive subset?
-- Does the positive-versus-negative advantage remain after FDR correction?
-- Does the logit-level effect survive actual autoregressive generation?
+- Is a signed localized log-probability artifact required before generation,
+  or is the unsigned motif-specificity limitation acceptable for the next gate?
+- If required, can signed localized token-level summaries be recovered without
+  changing the frozen additive intervention semantics or cohort definitions?
+- Is feature 3256's apparent selectivity distributed across many proteins or
+  driven by a small responsive subset?
+- Does the logit-level effect survive actual autoregressive generation once the
+  directionality limitation is resolved or explicitly accepted?
 - Does steering enrich the intended biological motif without merely degrading or
   globally perturbing ProGen-3?
 - Do generated motif-positive sequences exhibit broader S1A-family consistency?
