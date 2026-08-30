@@ -4,8 +4,9 @@ Last updated: 2026-08-29
 
 ## Current stage
 
-Directionality metric audit complete; signed localized evidence unavailable in
-the current canonical causal artifact.
+PS00134 token-level provenance recovered for the exact 64-sequence causal
+cohort using the frozen official ScanProsite PS00134 definition; multiplicative
+native-scaling steering has not yet been implemented or run.
 
 The SAE training, biological feature-enrichment, reconstruction diagnostics,
 residual analysis, additive intervention machinery, and prespecified
@@ -15,16 +16,56 @@ scientific question.
 The immediate question is no longer whether the intervention code works or
 whether the fixed-effects dose x concept interaction is positive. The
 directionality audit established that the stored localized motif-specificity
-readouts are unsigned magnitude summaries.
+readouts are unsigned magnitude summaries. A targeted signed-localized rerun
+script showed that `target_activation=0` in the existing causal dose grid is not
+an identity/no-op condition for feature 3256.
 
-The current question is:
+A new identity-centered signed-displacement runner now implements:
 
-> Should the project collect or recover a signed localized log-probability
-> readout before deciding whether latent 3256 is ready for autoregressive
-> generation?
+    z'_3256 = z_native,3256 + displacement
 
-Do not advance to autoregressive generation on the basis of the current
-localized directionality evidence alone.
+with the same residual-preserving additive hidden-state intervention. A
+two-sequence CUDA identity smoke with `displacement=0` passed exactly at the
+recorded tolerance: max hidden delta 0, max delta NLL 0, max KL 0, max signed
+token log-probability delta 0, and max signed legacy top-k contrast 0.
+
+However, the TopKSAE encoder is ReLU/top-k, so native latent activations are
+nonnegative. On the exact 64-sequence feature-3256 cohort, native feature-3256
+activations are sparse: min 0, median 0, mean 0.219558, SD 0.824249, 5th
+percentile 0, 25th percentile 0, 75th percentile 0, 95th percentile 2.585158,
+max 5.720966, and fraction exactly zero 0.929282. A globally symmetric negative
+displacement would therefore push many token activations below the valid encoded
+latent domain. Per the predefined stop condition, the full identity-centered
+nonzero signed experiment was not run and no directionality figure was created.
+
+A subsequent internal Gate A audit traced `has_ps00134` to the dataset builder's
+literal UniProt PROSITE cross-reference check: `prosite_ids` contains `PS00134`.
+This exactly reproduces the stored binary labels in all checked raw/processed/
+split datasets, but no checked project artifact contained PS00134 motif start/end
+coordinates, matched residues, regex spans, PROSITE scan output, or equivalent
+position-level provenance.
+
+An external definition recovery step then froze the official PROSITE definition
+and scanned the exact stored 64-sequence causal cohort FASTA through the official
+ScanProsite endpoint using only PS00134. The recovered current ScanProsite pattern
+matches exactly reproduce the 64-sequence cohort binary labels: 54 stored
+PS00134-positive sequences have one recoverable PS00134 pattern match each, 10
+stored PS00134-negative sequences have no recoverable match, and there are 0
+binary-label-versus-recoverable-pattern mismatches. All 54 recovered matches have
+ScanProsite confidence `(0)` and span six residues, yielding 324 residue-level
+position rows and 54 PRU10078 active-site rows at pattern offset 5.
+
+The external recovery preserves `has_ps00134` and
+`has_recoverable_ps00134_pattern_match` as distinct variables. For this exact
+cohort they agree, but the original retained UniProt TSV metadata still contains
+only `prosite_ids`; hit count, FALSE_NEG, PARTIAL, UNKNOWN, or richer PROSITE
+status fields were not retained in the project datasets.
+
+Per the current task scope, multiplicative native-scaling steering was not
+implemented or run, no signed steering statistics were generated, and no
+native-scaling directionality figure was created. Do not advance to
+autoregressive generation until the new PS00134 position annotations are used in
+a separately gated steering experiment.
 
 ---
 
@@ -42,7 +83,11 @@ PS00134-related biology.
 
 The fixed-effects confirmatory statistics support a positive 3256 interaction,
 but full promotion is currently blocked because the existing canonical causal
-artifact does not contain a signed localized biological readout.
+artifact does not contain a signed localized biological readout, the targeted
+signed rerun exposed a target-zero/no-op mismatch in the existing dose grid, and
+the identity-centered signed-displacement follow-up cannot use a nonzero global
+symmetric suppression grid without crossing the sparse nonnegative SAE latent
+domain.
 
 ---
 
@@ -82,6 +127,26 @@ artifact does not contain a signed localized biological readout.
 - Directionality metric audit completed from existing causal artifacts.
 - Publication-quality figure-generation script added for reproducible figures
   derived from canonical artifacts.
+- Targeted signed-localized feature-3256 rerun script implemented and unit
+  tested.
+- Tiny signed-localized GPU smoke run completed, reproducing legacy unsigned
+  metrics but failing the requested target-zero/no-op invariant.
+- Identity-centered signed-displacement feature-3256 runner implemented and
+  unit tested.
+- Native feature-3256 activation distribution over the exact experimental
+  cohort computed.
+- Identity-centered `displacement=0` two-sequence CUDA smoke passed exactly, but
+  the full nonzero signed-displacement experiment was stopped because a global
+  symmetric negative displacement is not feasible without crossing the
+  nonnegative TopKSAE latent domain.
+- PS00134 annotation provenance audit completed. Binary `has_ps00134` labels
+  reproduce exactly from stored `prosite_ids` cross-reference strings, but no
+  residue-level PS00134 match coordinates were present in the checked canonical
+  project artifacts.
+- Official PS00134 external definition frozen and exact 64-sequence causal
+  cohort scanned with ScanProsite using only PS00134. Current ScanProsite
+  pattern matches reproduce the cohort binary labels exactly and provide
+  residue-level coordinates for the 54 PS00134-positive sequences.
 
 ---
 
@@ -451,6 +516,142 @@ directionality failure was not scientifically meaningful as a signed biological
 failure, but the current artifacts are insufficient to show coherent opposing
 signed localized effects under suppression versus amplification.
 
+A targeted signed-localized follow-up script was then added:
+
+- `scripts/causal_feature_3256_signed_directionality.py`
+
+The script preserves the existing additive intervention helper and target-value
+grid, emits signed true-token log-probability deltas at each valid token
+position, aggregates signed deltas over the same legacy top-k absolute-delta
+position set used by the unsigned metric, and labels that position set as
+`legacy_topk_abs_delta_not_biological_ps00134_mask`. Inspection confirmed that
+the current code does not define a biological PS00134 position mask.
+
+A two-sequence CUDA smoke run wrote temporary `/tmp` outputs and verified that
+the new signed path exactly reproduces the legacy unsigned canonical metrics
+within tolerance. Maximum absolute differences were approximately:
+
+- motif_delta_logprob: 9.0e-17
+- nonmotif_delta_logprob: 6.1e-14
+- motif_specificity_score: 6.1e-14
+- delta_nll: 8.3e-17
+- KL: 9.4e-17
+
+However, the requested precondition that zero dose be an identity/no-op failed:
+for the two-sequence smoke, feature-3256 `target_activation=0` rows had maximum
+absolute signed motif specificity 0.1057 and maximum absolute delta NLL 0.001813.
+This reflects the existing script's use of `dose`/`target_value` as an SAE target
+activation, not necessarily an identity-centered latent displacement.
+
+Per the signed-rerun task stop condition, the full absolute-target signed
+localized experiment, signed statistics, bootstrap, and signed-directionality
+figure were not run.
+
+The identity-centered follow-up uses distinct artifacts and terminology:
+
+- `results/feature_3256_native_activation_summary.csv`
+- `results/causal_feature_3256_identity_centered_metadata.json`
+
+The old experiment remains the absolute target-activation design:
+
+    z'_3256 = target_activation
+
+The new implemented design is the identity-centered signed-displacement design:
+
+    z'_3256 = z_native,3256 + displacement
+
+At `displacement=0`, the two-sequence CUDA smoke produced exact no-op behavior
+within the `1e-6` gate. The attempted predeclared symmetric grid used
+`D = min(native p95, 2 * native p75)`, evaluated before outcome measurement.
+Because p75 is 0 and native min is 0, the only globally feasible symmetric
+latent-domain-preserving displacement is 0. Nonzero suppression would require
+negative realized feature activations at many token positions; no clamping was
+applied and no outcome-driven alternative grid was introduced.
+
+No true biological PS00134 positional mask was found in the existing canonical
+dataset/schema. The only currently available localized position set remains the
+legacy top-k absolute perturbation set, explicitly labeled as not a biological
+PS00134 mask.
+
+Directionality gate classification remains INCONCLUSIVE. The project now needs
+a prespecified suppression parameterization for sparse nonnegative latents
+before it can generate canonical signed-localized evidence.
+
+A PS00134 annotation provenance audit was then added:
+
+- `analysis/ps00134_annotation_provenance.py`
+- `results/ps00134_annotation_provenance_audit.csv`
+- `results/ps00134_annotation_provenance_audit.json`
+
+The audit inspected the raw master dataset, processed positives, matched
+background, clustered dataset, and test split. In each checked dataset,
+`has_ps00134` is exactly reproduced by the stored sequence-level rule:
+
+    prosite_ids contains "PS00134"
+
+Checked support:
+
+- raw master dataset: 16,837 PS00134-positive rows, 0 binary mismatches
+- processed positives: 16,837 PS00134-positive rows, 0 binary mismatches
+- matched background: 0 PS00134-positive rows, 0 binary mismatches
+- clustered dataset: 16,837 PS00134-positive rows, 0 binary mismatches
+- test split: 2,269 PS00134-positive rows, 0 binary mismatches
+
+However, none of the checked artifacts contains motif start/end coordinates,
+matched residues, regex match spans, PROSITE scan output, or equivalent
+position-level provenance. The label source is an external UniProt PROSITE
+cross-reference string exported by `data/utils/build_s1a_dataset.py`, not a
+project-local PS00134 scan whose spans can be replayed.
+
+That internal-only Gate A failed, so no motif coordinates should be inferred
+from the stored datasets alone. A follow-up external recovery step then froze
+the official PROSITE/ScanProsite definition and scanned the exact stored causal
+cohort sequences. New annotation artifacts are:
+
+- `results/ps00134_external_definition.json`
+- `results/provenance/ps00134_causal_cohort_sequences.fasta`
+- `results/provenance/scanprosite_ps00134_raw.json`
+- `results/ps00134_position_annotations.csv`
+- `results/ps00134_scanprosite_sequence_audit.csv`
+- `results/ps00134_scanprosite_recovery_metadata.json`
+
+Frozen external definition:
+
+- PROSITE accession: PS00134
+- name: TRYPSIN_HIS
+- entry type: PATTERN
+- pattern: `[LIVM]-[ST]-A-[STAG]-H-C`
+- pattern version: 1
+- associated ProRule: PRU10078
+- active-site offset: position 5 within the six-residue match
+- ProRule feature: ACT_SITE, note `Charge relay system`
+- PS00134 raw text SHA256:
+  `3059cf69ad245b950c98c3848cb462634292295ab7c4f1418f00521390d6fe13`
+- PRU10078 raw text SHA256:
+  `565e81499ef18e5592100dd7c2809864715acd4242719ab582a886c9e93780b4`
+- exact submitted 64-sequence FASTA SHA256:
+  `eaba3617784664a0f402366f56450f80c32231e5dba7e2ba58ed4c275b39c5cf`
+- raw ScanProsite JSON SHA256:
+  `2b060925a53675634399739d2db97282c9fdd85605d88fafbc6b232f608271a6`
+
+ScanProsite recovery on the exact causal cohort produced:
+
+- 64 submitted project sequences
+- 54 sequences with a recoverable PS00134 pattern match
+- 54 total PS00134 matches
+- 324 residue-level PS00134 position rows
+- 54 PRU10078 active-site rows at pattern offset 5
+- ScanProsite confidence `(0)` for all 54 matches
+- 0 binary-label-versus-recoverable-pattern mismatches
+
+For this exact 64-sequence cohort, Gate A now passes under the frozen current
+ScanProsite PS00134 definition. `has_ps00134` remains the original stored
+UniProt cross-reference label, while
+`has_recoverable_ps00134_pattern_match` denotes a current official ScanProsite
+pattern hit on the exact stored sequence. Native 3256 activation localization at
+PS00134 versus non-PS00134 positions has not yet been computed because the
+current task explicitly stopped before ProGen-3/SAE execution.
+
 ---
 
 ## Current confirmatory model
@@ -496,18 +697,26 @@ scientific meaning.
 
 ## Immediate next task
 
-Decide whether a signed localized log-probability readout is required before
-autoregressive generation.
+Use recovered PS00134 coordinates in a separately gated native-scaling steering experiment.
 
 The existing causal artifact cannot adjudicate signed localized directionality
-because the localized readouts were stored after applying absolute value. If the
-directionality gate remains mandatory, the next scientifically appropriate step
-is to recover or regenerate signed localized token-level summaries with clear
-provenance, while preserving the frozen additive intervention semantics and
-existing cohort definitions.
+because the localized readouts were stored after applying absolute value, and
+its `dose`/`target_value` grid is an absolute target-activation design rather
+than an identity-centered displacement design.
 
-Do not advance to generation unless the directionality limitation is explicitly
-accepted or resolved with a signed localized artifact.
+The identity-centered additive implementation now gives an exact mathematical
+identity at displacement 0, but a nonzero globally symmetric negative
+displacement is not feasible for feature 3256 without crossing the ReLU/top-k
+SAE latent domain because most token activations are zero.
+
+The next step should use `results/ps00134_position_annotations.csv` as the true
+PS00134 coordinate mask for the exact 64-sequence causal cohort, then implement
+the separately gated multiplicative native-scaling experiment:
+
+    z'_3256 = alpha * z_native,3256
+
+Do not advance to generation unless signed localized directionality is resolved
+under this explicit design, or the limitation is explicitly accepted.
 
 ---
 
@@ -578,15 +787,24 @@ Do not silently weaken or redefine the gate after seeing the result.
 
 ## Current scientific claim
 
-The strongest defensible statement after the directionality audit is:
+The strongest defensible statement after the directionality audit, targeted
+signed-rerun smoke check, and identity-centered displacement preflight is:
 
 > Latent 3256 has a statistically supported positive dose x PS00134-context
 > interaction under the prespecified fixed-effects fallback analysis. However,
 > it should remain a leading statistically supported candidate rather than a
 > formally validated causal controller, because the current canonical causal
-> artifact does not preserve signed localized motif effects and therefore cannot
-> establish coherent opposing biological direction under suppression versus
-> amplification.
+> artifact does not preserve signed localized motif effects, the attempted
+> targeted signed rerun exposed that the existing target-activation dose grid
+> does not make zero dose an identity/no-op condition for feature 3256, and a
+> new identity-centered signed-displacement preflight found that nonzero global
+> symmetric suppression is not feasible without crossing the sparse nonnegative
+> TopKSAE latent domain. A subsequent provenance audit showed that the exact
+> current canonical project artifacts: binary labels reproduce from UniProt
+> PROSITE cross-reference IDs, but position-level match coordinates were absent.
+> A frozen external ScanProsite recovery has now supplied coordinates for the
+> exact 64-sequence cohort and exactly reproduces the cohort labels, but no
+> signed localized steering experiment has used those coordinates yet.
 
 Do not currently describe 3256 as a formally validated causal controller of
 PS00134 biology.
@@ -660,10 +878,13 @@ significant result.
 
 ## Unresolved questions
 
+- Does native multiplicative scaling of feature 3256, using the recovered
+  ScanProsite PS00134 coordinate mask, show signed localized directionality?
+- Which additional suppression parameterizations, if any, are scientifically
+  valid for sparse nonnegative TopKSAE latents beyond native multiplicative
+  scaling?
 - Is a signed localized log-probability artifact required before generation,
   or is the unsigned motif-specificity limitation acceptable for the next gate?
-- If required, can signed localized token-level summaries be recovered without
-  changing the frozen additive intervention semantics or cohort definitions?
 - Is feature 3256's apparent selectivity distributed across many proteins or
   driven by a small responsive subset?
 - Does the logit-level effect survive actual autoregressive generation once the
